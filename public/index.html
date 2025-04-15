@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+    <link rel="icon" href="<%= BASE_URL %>favicon.ico">
+    <title>Programme Intégré Boxe & Musculation</title>
+    <meta name="description" content="Application de suivi pour programme d'entraînement de boxe et musculation sur 12 semaines">
+    <meta name="theme-color" content="#4A90E2">
+    
+    <!-- Préchargement des polices -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Montserrat:wght@600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- PWA support -->
+    <link rel="manifest" href="<%= BASE_URL %>manifest.json">
+    <link rel="apple-touch-icon" href="<%= BASE_URL %>img/icons/apple-touch-icon-180x180.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <!-- Styles initiaux pour éviter le flash de contenu non stylisé -->
+    <style>
+      :root {
+        --primary-color: #4A90E2;
+        --secondary-color: #8E44AD;
+        --success-color: #2ECC71;
+        --danger-color: #E74C3C;
+        --warning-color: #F39C12;
+        --bg-color: #F5F7FA;
+        --text-color: #333333;
+        --card-bg: #FFFFFF;
+        --border-color: #E1E5EB;
+      }
+      
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: 'Roboto', sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-color);
+      }
+      
+      #app-loading {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        width: 100vw;
+      }
+      
+      .spinner {
+        width: 50px;
+        height: 50px;
+        border: 5px solid rgba(74, 144, 226, 0.2);
+        border-radius: 50%;
+        border-top-color: var(--primary-color);
+        animation: spin 1s ease-in-out infinite;
+      }
+      
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+      
+      .loading-text {
+        margin-top: 20px;
+        font-size: 18px;
+        font-weight: 500;
+      }
+      
+      /* Dark theme */
+      html.dark-theme {
+        --bg-color: #121212;
+        --text-color: #e0e0e0;
+        --card-bg: #1e1e1e;
+        --border-color: #333;
+        --primary-color: #90caf9;
+        --secondary-color: #ce93d8;
+        --success-color: #81c784;
+        --danger-color: #e57373;
+        --warning-color: #ffb74d;
+      }
+    </style>
+  </head>
+  <body>
+    <noscript>
+      <strong>Nous sommes désolés, mais cette application ne fonctionne pas correctement sans JavaScript activé. Veuillez l'activer pour continuer.</strong>
+    </noscript>
+    <div id="app">
+      <div id="app-loading">
+        <div class="spinner"></div>
+        <p class="loading-text">Chargement du programme...</p>
+      </div>
+    </div>
+    <!-- built files will be auto injected -->
+  </body>
+</html>
