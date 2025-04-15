@@ -1,0 +1,13 @@
+// Variables globales
+$primary-color: #42b983;
+$secondary-color: #35495e;
+$text-dark: #2c3e50;
+$breakpoint-md: 768px;
+$box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+
+// Mixins
+@mixin respond-to($breakpoint) {
+  @media (min-width: $breakpoint) {
+    @content;
+  }
+}
