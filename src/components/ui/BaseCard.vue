@@ -1,23 +1,19 @@
 <template>
-  <div 
-    class="base-card" 
-    :class="[
-      `elevation-${elevation}`,
-      { 'clickable': clickable, 'hover-effect': hoverEffect }
-    ]"
-    @click="handleClick"
-  >
-    <div v-if="$slots.header || title" class="card-header">
-      <h3 v-if="title" class="card-title">{{ title }}</h3>
-      <slot name="header"></slot>
+  <div class="base-card" :class="cardClasses">
+    <div v-if="$slots.header" class="base-card__header">
+      <slot name="header" />
     </div>
     
-    <div class="card-body">
-      <slot></slot>
+    <div class="base-card__body">
+      <slot />
     </div>
-    
-    <div v-if="$slots.footer" class="card-footer">
-      <slot name="footer"></slot>
+
+    <div v-if="$slots.footer" class="base-card__footer">
+      <slot name="footer" />
+    </div>
+
+    <div v-if="loading" class="base-card__loading">
+      <div class="base-card__loading-spinner"></div>
     </div>
   </div>
 </template>
@@ -25,111 +21,98 @@
 <script>
 export default {
   name: 'BaseCard',
-  
   props: {
-    title: {
+    variant: {
       type: String,
-      default: ''
+      default: 'default',
+      validator: v => ['default', 'primary', 'secondary', 'success', 'warning', 'danger'].includes(v)
     },
-    elevation: {
-      type: Number,
-      default: 1,
-      validator: value => value >= 0 && value <= 5
-    },
-    clickable: {
-      type: Boolean,
-      default: false
-    },
-    hoverEffect: {
-      type: Boolean,
-      default: true
-    }
+    loading: Boolean,
+    hoverable: Boolean
   },
-  
-  emits: ['click'],
-  
-  setup(props, { emit }) {
-    const handleClick = () => {
-      if (props.clickable) {
-        emit('click');
-      }
-    };
-    
-    return {
-      handleClick
-    };
+  computed: {
+    cardClasses() {
+      return [
+        `base-card--${this.variant}`,
+        { 'base-card--hoverable': this.hoverable }
+      ]
+    }
   }
-};
+}
 </script>
 
-<style scoped lang="scss">
+<style lang="scss" scoped>
 .base-card {
-  background-color: var(--card-bg);
-  border-radius: var(--border-radius);
+  --card-bg: var(--color-surface);
+  --card-border: var(--color-border);
+  --card-color: var(--color-text);
+  
+  position: relative;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  color: var(--card-color);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
   overflow: hidden;
-  transition: box-shadow 0.3s ease, transform 0.3s ease;
-  
-  &.elevation-0 {
-    box-shadow: none;
-    border: 1px solid var(--border-color);
+
+  &__header {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--card-border);
+    font-size: 1.25rem;
+    font-weight: 600;
   }
-  
-  &.elevation-1 {
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+
+  &__body {
+    padding: 1.5rem;
   }
-  
-  &.elevation-2 {
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+
+  &__footer {
+    padding: 1.5rem;
+    border-top: 1px solid var(--card-border);
+    background: rgba(var(--color-surface-rgb), 0.6);
   }
-  
-  &.elevation-3 {
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+
+  &--hoverable:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   }
-  
-  &.elevation-4 {
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+
+  &--primary {
+    --card-bg: var(--color-primary);
+    --card-border: var(--color-primary-dark);
+    --card-color: var(--color-on-primary);
   }
-  
-  &.elevation-5 {
-    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.15);
+
+  &--secondary {
+    --card-bg: var(--color-secondary);
+    --card-border: var(--color-secondary-dark);
+    --card-color: var(--color-on-secondary);
   }
-  
-  &.clickable {
-    cursor: pointer;
+
+  &__loading {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(var(--card-bg-rgb), 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
   }
-  
-  &.hover-effect:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 20px rgba(0, 0, 0, 0.1);
-  }
-  
-  .card-header {
-    padding: var(--space-md) var(--space-lg);
-    border-bottom: 1px solid var(--border-color);
-    
-    .card-title {
-      margin: 0;
-      font-size: var(--font-size-lg);
-      font-weight: 600;
-    }
-  }
-  
-  .card-body {
-    padding: var(--space-lg);
-  }
-  
-  .card-footer {
-    padding: var(--space-md) var(--space-lg);
-    border-top: 1px solid var(--border-color);
-    background-color: rgba(0, 0, 0, 0.02);
+
+  &__loading-spinner {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    border: 3px solid var(--color-border);
+    border-top-color: var(--color-primary);
+    animation: spin 0.8s linear infinite;
   }
 }
 
-@media (max-width: 768px) {
-  .base-card {
-    .card-header, .card-body, .card-footer {
-      padding: var(--space-md);
-    }
-  }
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 </style>
