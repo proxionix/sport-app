@@ -1,138 +1,157 @@
 <template>
-  <div class="exercise-card" :class="{ 'completed': exercise.completed }">
-    <div class="card-content">
-      <div class="exercise-info">
-        <BaseCheckbox 
-          :modelValue="exercise.completed"
-          @update:modelValue="toggleCompletion"
-        />
+  <BaseCard class="exercise-card">
+    <template #header>
+      <h3 class="exercise-title">{{ exercise.title }}</h3>
+      <div class="exercise-meta">
+        <span class="duration">
+          <FontAwesomeIcon :icon="['fas', 'clock']" />
+          {{ exercise.duration }} min
+        </span>
+        <span class="difficulty">
+          <FontAwesomeIcon :icon="['fas', 'fire']" />
+          {{ exercise.difficulty }}/5
+        </span>
+      </div>
+    </template>
+
+    <template #default>
+      <div class="exercise-content">
+        <div class="description">
+          <p>{{ exercise.description }}</p>
+          <ul v-if="exercise.equipment.length" class="equipment-list">
+            <li v-for="item in exercise.equipment" :key="item">
+              <FontAwesomeIcon :icon="['fas', 'check']" />
+              {{ item }}
+            </li>
+          </ul>
+        </div>
         
-        <div class="exercise-details">
-          <h3 class="exercise-title" :class="{ 'completed-title': exercise.completed }">
-            {{ exercise.title }}
-          </h3>
+        <div class="media">
+          <img 
+            v-if="exercise.image" 
+            :src="require(`@/assets/img/${exercise.image}`)" 
+            :alt="exercise.title"
+            class="exercise-img"
+          >
+          <video 
+            v-if="exercise.video" 
+            controls
+            :poster="require(`@/assets/vid/thumbnails/${exercise.video}-thumb.jpg`)"
+          >
+            <source 
+              :src="require(`@/assets/vid/${exercise.video}.mp4`)" 
+              type="video/mp4"
+            >
+          </video>
         </div>
       </div>
-      
-      <div class="card-actions">
+    </template>
+
+    <template #footer>
+      <div class="exercise-actions">
         <BaseButton 
-          variant="outline"
-          size="sm"
-          icon="info-circle"
-          @click="viewDetails"
-          label="Détails"
-        />
+          variant="outline" 
+          @click="$emit('start-exercise')"
+        >
+          Commencer
+        </BaseButton>
+        <BaseButton 
+          variant="text" 
+          @click="$emit('show-details')"
+        >
+          Détails
+        </BaseButton>
       </div>
-    </div>
-  </div>
+    </template>
+  </BaseCard>
 </template>
 
 <script>
-import { defineComponent } from 'vue';
-import BaseCheckbox from '@/components/ui/BaseCheckbox.vue';
-import BaseButton from '@/components/ui/BaseButton.vue';
+import BaseCard from '@/components/ui/BaseCard.vue'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
-export default defineComponent({
+export default {
   name: 'ExerciseCard',
-  
-  components: {
-    BaseCheckbox,
-    BaseButton
-  },
-  
+  components: { BaseCard, FontAwesomeIcon },
   props: {
     exercise: {
       type: Object,
-      required: true
-    },
-    index: {
-      type: Number,
-      required: true
+      required: true,
+      validator: (value) => {
+        return [
+          'title', 
+          'description', 
+          'duration', 
+          'difficulty'
+        ].every(key => key in value)
+      }
     }
   },
-  
-  emits: ['toggle-completion', 'view-details'],
-  
-  setup(props, { emit }) {
-    const toggleCompletion = (completed) => {
-      emit('toggle-completion', { 
-        index: props.index,
-        completed
-      });
-    };
-    
-    const viewDetails = () => {
-      emit('view-details', props.exercise.detailSlug);
-    };
-    
-    return {
-      toggleCompletion,
-      viewDetails
-    };
-  }
-});
+  emits: ['start-exercise', 'show-details']
+}
 </script>
 
-<style scoped lang="scss">
+<style lang="scss" scoped>
 .exercise-card {
-  background-color: var(--card-bg);
-  border-radius: var(--border-radius);
-  border-left: 3px solid var(--primary-color);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  transition: all 0.2s ease;
-  padding: var(--space-md);
-  margin-bottom: var(--space-sm);
-  
-  &.completed {
-    border-left-color: var(--success-color);
-    background-color: var(--highlight-color);
-  }
-  
+  margin-bottom: 2rem;
+  transition: transform 0.3s ease;
+
   &:hover {
-    transform: translateX(4px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transform: translateY(-3px);
   }
-  
-  .card-content {
+
+  .exercise-title {
+    color: $primary-color;
+    margin: 0 0 0.5rem 0;
+  }
+
+  .exercise-meta {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    
-    @media (max-width: 576px) {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: var(--space-sm);
+    gap: 1.5rem;
+    color: $text-muted;
+
+    svg {
+      margin-right: 0.5rem;
     }
-    
-    .exercise-info {
-      display: flex;
-      align-items: center;
-      gap: var(--space-md);
-      flex: 1;
-      
-      .exercise-details {
-        .exercise-title {
-          margin: 0;
-          font-size: 1rem;
-          font-weight: 500;
-          
-          &.completed-title {
-            color: var(--muted-color);
-            text-decoration: line-through;
-          }
-        }
+  }
+
+  .exercise-content {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 2rem;
+
+    .description {
+      line-height: 1.6;
+    }
+
+    .equipment-list {
+      padding-left: 1.5rem;
+      color: $text-muted;
+
+      li {
+        margin: 0.5rem 0;
       }
     }
-    
-    .card-actions {
-      display: flex;
-      gap: var(--space-sm);
-      
-      @media (max-width: 576px) {
+
+    .media {
+      .exercise-img {
         width: 100%;
-        justify-content: flex-end;
+        border-radius: 8px;
+      }
+
+      video {
+        width: 100%;
+        border-radius: 8px;
       }
     }
+  }
+
+  .exercise-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    padding-top: 1rem;
+    border-top: 1px solid $border-color;
   }
 }
 </style>
