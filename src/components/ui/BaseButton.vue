@@ -1,115 +1,214 @@
 <template>
   <button
-    :class="buttonClass"
-    :type="type"
-    :disabled="disabled"
+    :class="buttonClasses"
+    :type="nativeType"
+    :disabled="isDisabled"
     v-bind="$attrs"
-    @click="$emit('click', $event)"
+    @click="handleClick"
   >
-    <slot />
+    <span v-if="loading" class="base-button__loading">
+      <svg class="base-button__spinner" viewBox="0 0 50 50">
+        <circle cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>
+      </svg>
+    </span>
+    <span v-else class="base-button__content">
+      <slot />
+    </span>
   </button>
 </template>
 
 <script>
+import { computed } from 'vue'
+
 export default {
   name: 'BaseButton',
+  inheritAttrs: false,
   props: {
-    type: {
+    nativeType: {
       type: String,
       default: 'button',
       validator: v => ['button', 'submit', 'reset'].includes(v)
     },
     variant: {
       type: String,
-      default: 'solid', // solid, outline, link
-      validator: v => ['solid', 'outline', 'link'].includes(v)
+      default: 'solid',
+      validator: v => ['solid', 'outline', 'text', 'link'].includes(v)
     },
     color: {
       type: String,
-      default: 'primary', // primary, secondary, success, error, etc.
+      default: 'primary',
+      validator: v => ['primary', 'secondary', 'success', 'warning', 'danger'].includes(v)
     },
     size: {
       type: String,
-      default: 'md', // xs, sm, md, lg, xl
+      default: 'md',
+      validator: v => ['xs', 'sm', 'md', 'lg', 'xl'].includes(v)
     },
-    block: {
-      type: Boolean,
-      default: false
-    },
-    disabled: {
-      type: Boolean,
-      default: false
-    }
+    pill: Boolean,
+    block: Boolean,
+    loading: Boolean,
+    disabled: Boolean
   },
-  computed: {
-    buttonClass() {
-      return [
-        'base-btn',
-        `base-btn--${this.variant}`,
-        `base-btn--${this.color}`,
-        `base-btn--${this.size}`,
-        { 'base-btn--block': this.block, 'base-btn--disabled': this.disabled }
-      ]
+  emits: ['click'],
+  setup(props, { emit }) {
+    const buttonClasses = computed(() => [
+      'base-button',
+      `base-button--${props.variant}`,
+      `base-button--${props.color}`,
+      `base-button--${props.size}`,
+      {
+        'base-button--pill': props.pill,
+        'base-button--block': props.block,
+        'base-button--disabled': props.disabled || props.loading
+      }
+    ])
+
+    const handleClick = (e) => {
+      if (!props.disabled && !props.loading) {
+        emit('click', e)
+      }
+    }
+
+    return {
+      buttonClasses,
+      handleClick
     }
   }
 }
 </script>
 
 <style lang="scss" scoped>
-.base-btn {
+.base-button {
+  --btn-bg: var(--color-primary);
+  --btn-color: var(--color-on-primary);
+  --btn-border: var(--color-primary);
+  --btn-hover-bg: var(--color-primary-dark);
+  --btn-hover-color: var(--color-on-primary);
+  
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-weight: 600;
+  border: 2px solid transparent;
   border-radius: 8px;
-  border: none;
+  font-weight: 600;
+  line-height: 1;
+  text-align: center;
+  text-decoration: none;
+  vertical-align: middle;
   cursor: pointer;
-  transition: background 0.2s, color 0.2s, border 0.2s;
-  padding: 0.75em 1.5em;
-  font-size: 1rem;
+  user-select: none;
+  transition: 
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    opacity 0.2s ease;
+  white-space: nowrap;
 
   &--solid {
-    background: $primary-color;
-    color: #fff;
-    &:hover:not(:disabled) {
-      background: darken($primary-color, 10%);
+    background-color: var(--btn-bg);
+    color: var(--btn-color);
+    border-color: var(--btn-bg);
+
+    &:not(:disabled):hover {
+      background-color: var(--btn-hover-bg);
+      border-color: var(--btn-hover-bg);
     }
   }
+
   &--outline {
-    background: transparent;
-    border: 2px solid $primary-color;
-    color: $primary-color;
-    &:hover:not(:disabled) {
-      background: $primary-color;
-      color: #fff;
+    background-color: transparent;
+    color: var(--btn-bg);
+    border-color: currentColor;
+
+    &:not(:disabled):hover {
+      background-color: rgba(var(--btn-bg-rgb), 0.1);
     }
   }
-  &--link {
-    background: none;
-    color: $primary-color;
-    text-decoration: underline;
-    padding: 0;
-    border: none;
-    &:hover:not(:disabled) {
-      color: darken($primary-color, 10%);
+
+  &--text {
+    background-color: transparent;
+    color: var(--btn-bg);
+    border-color: transparent;
+
+    &:not(:disabled):hover {
+      background-color: rgba(var(--btn-bg-rgb), 0.1);
     }
   }
-  &--primary { /* already handled above */ }
-  &--secondary {
-    background: $secondary-color;
-    color: #fff;
-    &:hover:not(:disabled) {
-      background: darken($secondary-color, 10%);
+
+  // Colors
+  @each $color in primary, secondary, success, warning, danger {
+    &--#{$color} {
+      --btn-bg: var(--color-#{$color});
+      --btn-color: var(--color-on-#{$color});
+      --btn-hover-bg: var(--color-#{$color}-dark);
+      --btn-bg-rgb: #{red(var(--color-#{$color})), green(var(--color-#{$color})), blue(var(--color-#{$color}))};
     }
   }
-  &--md { font-size: 1rem; }
-  &--sm { font-size: 0.85rem; padding: 0.5em 1em; }
-  &--lg { font-size: 1.15rem; padding: 1em 2em; }
-  &--block { width: 100%; }
-  &--disabled, &:disabled {
+
+  // Sizes
+  &--xs {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+  }
+  &--sm {
+    font-size: 0.875rem;
+    padding: 0.5rem 1rem;
+  }
+  &--md {
+    font-size: 1rem;
+    padding: 0.75rem 1.5rem;
+  }
+  &--lg {
+    font-size: 1.125rem;
+    padding: 1rem 2rem;
+  }
+  &--xl {
+    font-size: 1.25rem;
+    padding: 1.25rem 2.5rem;
+  }
+
+  // Modifiers
+  &--pill {
+    border-radius: 9999px;
+  }
+
+  &--block {
+    width: 100%;
+  }
+
+  &--disabled,
+  &:disabled {
     opacity: 0.6;
     cursor: not-allowed;
     pointer-events: none;
   }
+
+  &__loading {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  &__spinner {
+    animation: rotate 1.4s linear infinite;
+    width: 1.5em;
+    height: 1.5em;
+
+    circle {
+      stroke: currentColor;
+      stroke-linecap: round;
+      animation: dash 1.4s ease-in-out infinite;
+    }
+  }
+}
+
+@keyframes rotate {
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes dash {
+  0% { stroke-dasharray: 1,150; stroke-dashoffset: 0; }
+  50% { stroke-dasharray: 90,150; stroke-dashoffset: -35; }
+  100% { stroke-dasharray: 90,150; stroke-dashoffset: -124; }
 }
 </style>
