@@ -1,55 +1,36 @@
 <template>
-  <button 
-    :class="buttonClasses" 
-    :disabled="disabled"
-    @click="$emit('click')"
+  <button
+    :class="buttonClass"
     :type="type"
+    :disabled="disabled"
+    v-bind="$attrs"
+    @click="$emit('click', $event)"
   >
-    <FontAwesomeIcon v-if="icon" :icon="['fas', icon]" :class="{ 'mr-2': label && icon }" />
-    <span v-if="label">{{ label }}</span>
-    <slot></slot>
+    <slot />
   </button>
 </template>
 
 <script>
-import { computed } from 'vue';
-
 export default {
   name: 'BaseButton',
-  
   props: {
-    label: {
+    type: {
       type: String,
-      default: ''
+      default: 'button',
+      validator: v => ['button', 'submit', 'reset'].includes(v)
     },
     variant: {
       type: String,
-      default: 'primary',
-      validator: (value) => [
-        'primary', 
-        'secondary', 
-        'success', 
-        'danger', 
-        'warning', 
-        'info', 
-        'light', 
-        'dark', 
-        'outline',
-        'text'
-      ].includes(value)
+      default: 'solid', // solid, outline, link
+      validator: v => ['solid', 'outline', 'link'].includes(v)
+    },
+    color: {
+      type: String,
+      default: 'primary', // primary, secondary, success, error, etc.
     },
     size: {
       type: String,
-      default: 'md',
-      validator: (value) => ['xs', 'sm', 'md', 'lg', 'xl'].includes(value)
-    },
-    icon: {
-      type: String,
-      default: ''
-    },
-    rounded: {
-      type: Boolean,
-      default: false
+      default: 'md', // xs, sm, md, lg, xl
     },
     block: {
       type: Boolean,
@@ -58,58 +39,77 @@ export default {
     disabled: {
       type: Boolean,
       default: false
-    },
-    type: {
-      type: String,
-      default: 'button',
-      validator: (value) => ['button', 'submit', 'reset'].includes(value)
     }
   },
-  
-  emits: ['click'],
-  
-  setup(props) {
-    const buttonClasses = computed(() => ({
-      'base-button': true,
-      [`btn-${props.variant}`]: true,
-      [`btn-${props.size}`]: true,
-      'btn-rounded': props.rounded,
-      'btn-block': props.block,
-      'icon-only': props.icon && !props.label && !props.$slots.default
-    }));
-    
-    return {
-      buttonClasses
-    };
+  computed: {
+    buttonClass() {
+      return [
+        'base-btn',
+        `base-btn--${this.variant}`,
+        `base-btn--${this.color}`,
+        `base-btn--${this.size}`,
+        { 'base-btn--block': this.block, 'base-btn--disabled': this.disabled }
+      ]
+    }
   }
-};
+}
 </script>
 
-<style scoped lang="scss">
-.base-button {
+<style lang="scss" scoped>
+.base-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-weight: 500;
-  text-align: center;
-  white-space: nowrap;
-  vertical-align: middle;
-  user-select: none;
-  border: 1px solid transparent;
-  padding: 0.375rem 0.75rem;
-  font-size: 1rem;
-  line-height: 1.5;
-  border-radius: var(--border-radius);
-  transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, 
-              border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  font-weight: 600;
+  border-radius: 8px;
+  border: none;
   cursor: pointer;
-  
-  &:focus {
-    outline: none;
+  transition: background 0.2s, color 0.2s, border 0.2s;
+  padding: 0.75em 1.5em;
+  font-size: 1rem;
+
+  &--solid {
+    background: $primary-color;
+    color: #fff;
+    &:hover:not(:disabled) {
+      background: darken($primary-color, 10%);
+    }
   }
-  
-  &:active {
-    transform: translateY(1px);
+  &--outline {
+    background: transparent;
+    border: 2px solid $primary-color;
+    color: $primary-color;
+    &:hover:not(:disabled) {
+      background: $primary-color;
+      color: #fff;
+    }
   }
-  
-  &:disable
+  &--link {
+    background: none;
+    color: $primary-color;
+    text-decoration: underline;
+    padding: 0;
+    border: none;
+    &:hover:not(:disabled) {
+      color: darken($primary-color, 10%);
+    }
+  }
+  &--primary { /* already handled above */ }
+  &--secondary {
+    background: $secondary-color;
+    color: #fff;
+    &:hover:not(:disabled) {
+      background: darken($secondary-color, 10%);
+    }
+  }
+  &--md { font-size: 1rem; }
+  &--sm { font-size: 0.85rem; padding: 0.5em 1em; }
+  &--lg { font-size: 1.15rem; padding: 1em 2em; }
+  &--block { width: 100%; }
+  &--disabled, &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+}
+</style>
