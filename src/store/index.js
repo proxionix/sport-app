@@ -1,78 +1,44 @@
-import { createStore } from 'vuex';
-import programModule from './modules/program';
-import progressModule from './modules/progress';
-import userModule from './modules/user';
+import { createStore } from 'vuex'
+import program from '@/data/program.js'
 
-// Création du store avec les modules
-const store = createStore({
-  modules: {
-    program: programModule,
-    progress: progressModule,
-    user: userModule
-  },
-  
-  // État global partagé entre les modules
+export default createStore({
   state: {
-    appReady: false,
-    version: '1.0.0',
-    lastUpdated: new Date().toISOString()
+    showModal: false,
+    user: {
+      name: 'Jean Dupont',
+      weight: 83,
+      chest: 105,
+      arm: 36,
+      waist: 88
+    },
+    progress: [],
+    program
   },
-  
-  getters: {
-    getAppReady: state => state.appReady,
-    getVersion: state => state.version,
-    getLastUpdated: state => new Date(state.lastUpdated).toLocaleDateString()
-  },
-  
   mutations: {
-    SET_APP_READY(state, value) {
-      state.appReady = value;
+    TOGGLE_MODAL(state) {
+      state.showModal = !state.showModal
     },
-    UPDATE_TIMESTAMP(state) {
-      state.lastUpdated = new Date().toISOString();
+    UPDATE_USER(state, payload) {
+      state.user = { ...state.user, ...payload }
+    },
+    ADD_PROGRESS(state, entry) {
+      state.progress.push(entry)
     }
   },
-  
   actions: {
-    initializeApp({ commit, dispatch }) {
-      // Initialiser les données de l'application
-      dispatch('program/initializeCurrentWeekAndDay');
-      
-      // Charger les données utilisateur si disponibles
-      const savedProgress = localStorage.getItem('userProgress');
-      if (savedProgress) {
-        dispatch('program/loadSavedProgress', JSON.parse(savedProgress));
-      }
-      
-      commit('SET_APP_READY', true);
+    toggleModal({ commit }) {
+      commit('TOGGLE_MODAL')
     },
-    
-    saveAllData({ state, commit }) {
-      // Sauvegarder les données dans le localStorage
-      localStorage.setItem('userProgress', JSON.stringify({
-        completedExercises: state.program.completedExercises,
-        stats: state.progress.stats,
-        notes: state.progress.notes
-      }));
-      
-      commit('UPDATE_TIMESTAMP');
+    updateUser({ commit }, payload) {
+      commit('UPDATE_USER', payload)
+    },
+    addProgress({ commit }, entry) {
+      commit('ADD_PROGRESS', entry)
     }
+  },
+  getters: {
+    getWeek: state => weekNumber => state.program.weeks.find(w => w.weekNumber == weekNumber),
+    getUser: state => state.user,
+    getProgress: state => state.progress
   }
-});
-
-// Middleware pour sauvegarder automatiquement les changements importants
-store.subscribeAction((action) => {
-  if (
-    action.type.includes('toggle') || 
-    action.type.includes('update') || 
-    action.type.includes('add') || 
-    action.type.includes('remove')
-  ) {
-    // Délai pour éviter trop d'écritures consécutives
-    setTimeout(() => {
-      store.dispatch('saveAllData');
-    }, 300);
-  }
-});
-
-export default store;
+})
