@@ -1,184 +1,183 @@
 <template>
-  <div class="week-view-container">
-    <div class="navigation-controls">
-      <BaseButton 
-        icon="arrow-left" 
-        variant="outline"
-        @click="navigateToPreviousWeek" 
-        :disabled="!hasPreviousWeek"
-      />
-      <h1>{{ weekTitle }}</h1>
-      <BaseButton 
-        icon="arrow-right" 
-        variant="outline"
-        @click="navigateToNextWeek" 
-        :disabled="!hasNextWeek"
+  <div class="week-view">
+    <div class="week-header">
+      <h2>Semaine {{ weekNumber }} - {{ currentWeek.title }}</h2>
+      <BaseProgress 
+        :value="completionRate" 
+        :max="100"
+        label="Progression"
       />
     </div>
-    
-    <div v-if="currentWeek" class="week-container">
-      <WeeklyView :week-data="currentWeek" :week-index="currentWeekIndex" />
+
+    <div class="days-grid">
+      <router-link
+        v-for="day in currentWeek.days"
+        :key="day.dayName"
+        :to="`/week/${weekNumber}/${day.dayName}`"
+        class="day-card"
+      >
+        <h3>{{ day.title }}</h3>
+        <div class="day-meta">
+          <span>{{ day.exercises.length }} exercices</span>
+          <FontAwesomeIcon 
+            v-if="day.completed" 
+            :icon="['fas', 'circle-check']" 
+            class="completed-icon"
+          />
+        </div>
+      </router-link>
     </div>
-    
-    <div v-else class="no-week-data">
-      <p>Semaine non disponible. Veuillez sélectionner une semaine valide.</p>
-      <BaseButton 
-        label="Retour à l'accueil" 
-        @click="$router.push('/')"
-        variant="primary"
-      />
+
+    <div class="week-stats">
+      <div class="stat-card">
+        <h4>Durée totale</h4>
+        <p class="stat-value">
+          {{ totalDuration }}<span class="unit">min</span>
+        </p>
+      </div>
+      <div class="stat-card">
+        <h4>Exercices complétés</h4>
+        <p class="stat-value">
+          {{ completedExercises }}<span class="unit">/{{ totalExercises }}</span>
+        </p>
+      </div>
+      <div class="stat-card">
+        <h4>Calories brûlées</h4>
+        <p class="stat-value">
+          {{ estimatedCalories }}<span class="unit">kcal</span>
+        </p>
+      </div>
     </div>
   </div>
 </template>
 
 <script>
-import { computed, watch, onMounted } from 'vue';
-import { useStore } from 'vuex';
-import { useRouter, useRoute } from 'vue-router';
-import WeeklyView from '@/components/program/WeeklyView.vue';
-import BaseButton from '@/components/ui/BaseButton.vue';
+import { mapGetters } from 'vuex'
+import BaseProgress from '@/components/ui/BaseProgress.vue'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
 export default {
   name: 'WeekView',
-  
-  components: {
-    WeeklyView,
-    BaseButton
-  },
-  
-  props: {
-    weekIndex: {
-      type: Number,
-      default: null
+  components: { BaseProgress, FontAwesomeIcon },
+  computed: {
+    ...mapGetters(['getWeek']),
+    weekNumber() {
+      return parseInt(this.$route.params.week) || 1
+    },
+    currentWeek() {
+      return this.getWeek(this.weekNumber) || {}
+    },
+    completionRate() {
+      return this.currentWeek.days?.reduce((acc, day) => {
+        return acc + (day.completed ? 100 / this.currentWeek.days.length : 0)
+      }, 0) || 0
+    },
+    totalDuration() {
+      return this.currentWeek.days?.reduce((acc, day) => {
+        return acc + day.exercises.reduce((sum, ex) => sum + ex.duration, 0)
+      }, 0) || 0
+    },
+    completedExercises() {
+      return this.currentWeek.days?.reduce((acc, day) => {
+        return acc + day.exercises.filter(ex => ex.completed).length
+      }, 0) || 0
+    },
+    totalExercises() {
+      return this.currentWeek.days?.reduce((acc, day) => {
+        return acc + day.exercises.length
+      }, 0) || 0
+    },
+    estimatedCalories() {
+      return Math.round(this.totalDuration * 7.5) // Estimation 7.5kcal/min
     }
-  },
-  
-  setup(props) {
-    const store = useStore();
-    const router = useRouter();
-    const route = useRoute();
-    
-    // Compute current week index either from props or from route params
-    const currentWeekIndex = computed(() => {
-      if (props.weekIndex !== null) {
-        return props.weekIndex;
-      }
-      
-      const paramIndex = route.params.weekIndex;
-      if (paramIndex !== undefined) {
-        return parseInt(paramIndex);
-      }
-      
-      // Default to store current week
-      return store.state.program.currentWeekIndex;
-    });
-    
-    // Set the current week in store when component mounts or when week index changes
-    watch(() => currentWeekIndex.value, (newIndex) => {
-      store.dispatch('program/selectWeek', newIndex);
-    }, { immediate: true });
-    
-    onMounted(() => {
-      // Initialize if necessary
-      if (store.state.program.weeks.length === 0) {
-        store.dispatch('program/initializeCurrentWeekAndDay');
-      }
-      
-      // Set the current week in store
-      store.dispatch('program/selectWeek', currentWeekIndex.value);
-    });
-    
-    // Get current week data
-    const currentWeek = computed(() => {
-      return store.getters['program/getWeekByIndex'](currentWeekIndex.value);
-    });
-    
-    // Week title
-    const weekTitle = computed(() => {
-      return `Semaine ${currentWeekIndex.value + 1}`;
-    });
-    
-    // Navigation control
-    const hasNextWeek = computed(() => {
-      return currentWeekIndex.value < store.state.program.program.weeks.length - 1;
-    });
-    
-    const hasPreviousWeek = computed(() => {
-      return currentWeekIndex.value > 0;
-    });
-    
-    const navigateToNextWeek = () => {
-      if (hasNextWeek.value) {
-        router.push(`/week/${currentWeekIndex.value + 1}`);
-      }
-    };
-    
-    const navigateToPreviousWeek = () => {
-      if (hasPreviousWeek.value) {
-        router.push(`/week/${currentWeekIndex.value - 1}`);
-      }
-    };
-    
-    return {
-      currentWeekIndex,
-      currentWeek,
-      weekTitle,
-      hasNextWeek,
-      hasPreviousWeek,
-      navigateToNextWeek,
-      navigateToPreviousWeek
-    };
   }
-};
+}
 </script>
 
-<style scoped lang="scss">
-.week-view-container {
+<style lang="scss" scoped>
+.week-view {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 var(--space-md);
-}
+  padding: 2rem 0;
 
-.navigation-controls {
-  display: flex;
-  align-items: center;
-  gap: var(--space-md);
-  margin-bottom: var(--space-xl);
-  
-  h1 {
-    margin: 0;
-    color: var(--primary-color);
-    font-size: 2rem;
-    flex: 1;
-    text-align: center;
+  .week-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 3rem;
+    padding: 0 1rem;
   }
-  
-  @media (max-width: 576px) {
-    h1 {
-      font-size: 1.5rem;
+
+  .days-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    padding: 0 1rem;
+  }
+
+  .day-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.3s ease;
+    box-shadow: $card-shadow;
+
+    &:hover {
+      transform: translateY(-3px);
+    }
+
+    h3 {
+      margin: 0 0 1rem 0;
+      color: $primary-color;
+    }
+
+    .day-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: $text-muted;
+
+      .completed-icon {
+        color: $success-color;
+      }
     }
   }
-}
 
-.week-container {
-  animation: fadeIn 0.3s ease;
-}
+  .week-stats {
+    margin-top: 3rem;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+    padding: 0 1rem;
 
-.no-week-data {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  padding: var(--space-xl) 0;
-  
-  p {
-    margin-bottom: var(--space-md);
-    color: var(--muted-color);
+    .stat-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 1.5rem;
+      text-align: center;
+      box-shadow: $card-shadow;
+
+      h4 {
+        margin: 0 0 1rem 0;
+        color: $text-muted;
+        font-weight: 500;
+      }
+
+      .stat-value {
+        font-size: 2.5rem;
+        margin: 0;
+        color: $primary-color;
+        font-weight: 700;
+
+        .unit {
+          font-size: 1rem;
+          color: $text-muted;
+          margin-left: 0.5rem;
+        }
+      }
+    }
   }
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
 }
 </style>
